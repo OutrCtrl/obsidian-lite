@@ -1,0 +1,24 @@
+:root {
+  --bg: #050506;
+  --surface: #0C0C0E;
+  --elev: #141417;
+  --track: #1E1E22;
+  --line: rgba(255,255,255,0.07);
+  --line-v: rgba(123,47,190,0.30);
+  --text: #F4F4F6;
+  --silver: #B4B4BC;
+  --dim: #6E6A7A;
+  --accent: #A86CE0;
+  --accent-br: #C89CFF;
+  --fill: linear-gradient(90deg,#5B2A8C,#A86CE0);
+  --up: #00E5A0;
+  --down: #FF5C72;
+  --gold: #C9A84C;
+  --btn: linear-gradient(135deg,#9B4FDE,#6E29B0);
+  --btn-shadow: 0 6px 24px rgba(123,47,190,0.45);
+  --navbg: #08070C;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font: 'Outfit', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}

@@ -120,8 +120,8 @@ const OnboardingScreen = {
         const btn = document.getElementById('ob-finish');
         btn.textContent = '...'; btn.disabled = true;
         await DB.updateProfile(profile.id, {
-          selected_exchanges: [...this.selected],
-          selected_preset: this.preset
+          exchanges: [...this.selected],
+          preset: this.preset
         });
         onComplete();
       };

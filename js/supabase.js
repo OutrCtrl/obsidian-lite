@@ -36,7 +36,7 @@ const DB = {
 
   // TRADES
   async getTrades(userId, status = null) {
-    let q = _sb.from('paper_trades').select('*').eq('user_id', userId).order('opened_at', { ascending: false });
+    let q = _sb.from('paper_trades').select('*').eq('user_id', userId).order('created_at', { ascending: false });
     if (status) q = q.eq('status', status);
     const { data, error } = await q;
     return { data: data || [], error };
@@ -59,7 +59,7 @@ const DB = {
     return { data: data || [], error };
   },
   async getAllTrades() {
-    const { data, error } = await _sb.from('paper_trades').select('*').order('opened_at', { ascending: false }).limit(100);
+    const { data, error } = await _sb.from('paper_trades').select('*').order('created_at', { ascending: false }).limit(100);
     return { data: data || [], error };
   }
 };

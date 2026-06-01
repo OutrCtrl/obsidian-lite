@@ -4,33 +4,19 @@ const APP = {
   currentScreen: 'dashboard',
 
   async init() {
-    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
-
-    // Hide splash after 2s regardless
     setTimeout(() => {
       const splash = document.getElementById('splash');
       if (splash) { splash.classList.add('hide'); setTimeout(() => splash.remove(), 600); }
     }, 2000);
-
-    // Start price feed
     try { ENGINE.connect(); } catch(e) {}
-
     try {
       const user = await DB.getUser();
-      if (user) {
-        this.user = user;
-        await this.loadProfile();
-      } else {
-        this.showAuth();
-      }
-    } catch(e) {
-      this.showAuth();
-    }
-
-    // Listen for auth changes
+      if (user) { this.user = user; await this.loadProfile(); }
+      else { this.showAuth(); }
+    } catch(e) { this.showAuth(); }
     DB.onAuthChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         this.user = session.user;
@@ -53,35 +39,86 @@ const APP = {
       } else {
         this.profile = data;
       }
-
       if (!this.profile) { this.showAuth(); return; }
-
       const needsOnboarding = !this.profile.exchanges || this.profile.exchanges.length === 0;
-      if (needsOnboarding) {
-        this.showOnboarding();
-      } else {
-        this.showApp();
-      }
-    } catch(e) {
-      this.showAuth();
-    }
+      if (needsOnboarding) { this.showOnboarding(); }
+      else { this.showApp(); }
+    } catch(e) { this.showAuth(); }
   },
 
   showAuth() {
-    const app = document.getElementById('app');
-    const screen = document.getElementById('screen');
-    const nav = document.getElementById('nav');
-    app.style.display = 'flex';
-    nav.style.display = 'none';
-    screen.style.paddingBottom = '0';
-    screen.innerHTML = AuthScreen.render('login');
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('nav').style.display = 'none';
+    document.getElementById('screen').style.paddingBottom = '0';
+    document.getElementById('screen').innerHTML = AuthScreen.render('login');
     AuthScreen.bind('login', () => {});
   },
 
   showOnboarding() {
-    const app = document.getElementById('app');
-    const screen = document.getElementById('screen');
-    const nav = document.getElementById('nav');
-    app.style.display = 'flex';
-    nav.style.display = 'none';
-    screen.style.padding
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('nav').style.display = 'none';
+    document.getElementById('screen').style.paddingBottom = '0';
+    document.getElementById('screen').innerHTML = OnboardingScreen.render(1);
+    OnboardingScreen.bind(1, this.profile, async () => {
+      const { data } = await DB.getProfile(this.user.id);
+      if (data) this.profile = data;
+      this.showApp();
+    });
+  },
+
+  async showApp() {
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('nav').style.display = 'flex';
+    document.getElementById('screen').style.paddingBottom = '80px';
+    if (this.profile && this.profile.role === 'super_admin') {
+      const btn = document.getElementById('nav-admin');
+      if (btn) btn.style.display = 'flex';
+    }
+    if (this.profile && this.profile.bot_active) {
+      ENGINE.startBot(this.profile, async () => {
+        const { data } = await DB.getTrades(this.profile.id, 'open');
+        return data || [];
+      });
+    }
+    await this.navigate('dashboard');
+    this.bindNav();
+  },
+
+  async navigate(screen) {
+    this.currentScreen = screen;
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.screen === screen);
+    });
+    const el = document.getElementById('screen');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    el.scrollTop = 0;
+    try {
+      if (screen === 'dashboard') {
+        el.innerHTML = await DashboardScreen.render(this.profile);
+        DashboardScreen.bind(this.profile, () => this.navigate('dashboard'));
+      } else if (screen === 'activity') {
+        el.innerHTML = await ActivityScreen.render(this.profile);
+        ActivityScreen.bind(this.profile);
+      } else if (screen === 'markets') {
+        el.innerHTML = MarketsScreen.render();
+        MarketsScreen.bind();
+      } else if (screen === 'more') {
+        el.innerHTML = MoreScreen.render(this.profile);
+        MoreScreen.bind(this.profile, () => this.showAuth());
+      } else if (screen === 'admin') {
+        el.innerHTML = await AdminScreen.render(this.profile);
+        AdminScreen.bind(this.profile);
+      }
+    } catch(e) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Error: ' + e.message + '</div></div>';
+    }
+  },
+
+  bindNav() {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.onclick = () => this.navigate(btn.dataset.screen);
+    });
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => APP.init());

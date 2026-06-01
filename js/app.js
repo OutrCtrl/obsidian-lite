@@ -36,7 +36,7 @@ const APP = {
     setTimeout(() => {
       document.getElementById('splash').classList.add('hide');
       setTimeout(() => document.getElementById('splash').remove(), 600);
-    }, 1500);
+    }, 3000);
   },
 
   async loadProfile() {

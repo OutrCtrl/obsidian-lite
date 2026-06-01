@@ -56,13 +56,13 @@ const ENGINE = {
 
   async runBot(profile, openTrades) {
     if (!profile.bot_active) return;
-    const preset = this.PRESETS[profile.selected_preset] || this.PRESETS.BALANCED;
+    const preset = this.PRESETS[profile.preset] || this.PRESETS.BALANCED;
     // Close profitable trades
     for (const trade of openTrades) {
       const current = this.prices[trade.pair.replace('/','')];
       if (!current) continue;
       const entry = parseFloat(trade.entry_price);
-      const pct = trade.direction === 'LONG'
+      const pct = trade.side === 'LONG'
         ? ((current.price - entry) / entry) * 100
         : ((entry - current.price) / entry) * 100;
       if (pct >= preset.tp || pct <= -preset.sl) {
@@ -75,14 +75,14 @@ const ENGINE = {
       const pair = this.PAIRS[Math.floor(Math.random() * this.PAIRS.length)];
       const current = this.prices[pair];
       if (current) {
-        const direction = Math.random() > 0.5 ? 'LONG' : 'SHORT';
+        const side = Math.random() > 0.5 ? 'long' : 'short';
         const size = (profile.paper_balance * 0.05);
         const strategy = this.STRATEGIES[Math.floor(Math.random() * this.STRATEGIES.length)];
         const score = this.getCSS(pair);
         if (score > 45) {
           await DB.insertTrade({
             user_id: profile.id, pair: this.DISPLAY[pair] || pair,
-            direction, entry_price: current.price, size: parseFloat(size.toFixed(2)),
+            side, entry_price: current.price, size: parseFloat(size.toFixed(2)),
             strategy, signal_score: score, status: 'open'
           });
         }

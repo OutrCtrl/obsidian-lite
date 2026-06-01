@@ -16,16 +16,16 @@ const AuthScreen = {
   </div>
   <div id="auth-error"></div>
   <div class="input-group">
-    <label class="input-label">Email</label>
+    <label class="input-label">EMAIL</label>
     <input class="input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email">
   </div>
   <div class="input-group">
-    <label class="input-label">Password</label>
+    <label class="input-label">PASSWORD</label>
     <input class="input" id="auth-password" type="password" placeholder="••••••••" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}">
   </div>
   ${mode === 'signup' ? `
   <div class="input-group">
-    <label class="input-label">Confirm Password</label>
+    <label class="input-label">CONFIRM PASSWORD</label>
     <input class="input" id="auth-confirm" type="password" placeholder="••••••••">
   </div>` : ''}
   <button class="btn btn-primary" id="auth-submit" style="margin-top:8px">
@@ -53,38 +53,69 @@ const AuthScreen = {
       errEl.innerHTML = '';
 
       if (!email || !password) {
-        errEl.innerHTML = '<div class="error-msg">Please fill in all fields.</div>'; return;
+        errEl.innerHTML = '<div class="error-msg">Please fill in all fields.</div>';
+        return;
       }
 
       if (mode === 'signup') {
         const confirm = document.getElementById('auth-confirm').value;
         if (password !== confirm) {
-          errEl.innerHTML = '<div class="error-msg">Passwords do not match.</div>'; return;
+          errEl.innerHTML = '<div class="error-msg">Passwords do not match.</div>';
+          return;
         }
         if (password.length < 6) {
-          errEl.innerHTML = '<div class="error-msg">Password must be at least 6 characters.</div>'; return;
+          errEl.innerHTML = '<div class="error-msg">Password must be at least 6 characters.</div>';
+          return;
         }
       }
 
       const btn = document.getElementById('auth-submit');
-      btn.textContent = '...'; btn.disabled = true;
+      btn.textContent = '...';
+      btn.disabled = true;
 
-      const fn = mode === 'login' ? DB.signIn.bind(DB) : DB.signUp.bind(DB);
-      const { error } = await fn(email, password);
-
-      if (error) {
-        errEl.innerHTML = `<div class="error-msg">${error.message}</div>`;
+      try {
+        if (mode === 'login') {
+          const { data, error } = await DB.signIn(email, password);
+          if (error) {
+            errEl.innerHTML = '<div class="error-msg">' + error.message + '</div>';
+            btn.textContent = 'Sign In';
+            btn.disabled = false;
+          } else if (data?.user) {
+            APP.user = data.user;
+            await APP.loadProfile();
+          }
+        } else {
+          const { data, error } = await DB.signUp(email, password);
+          if (error) {
+            errEl.innerHTML = '<div class="error-msg">' + error.message + '</div>';
+            btn.textContent = 'Create Account';
+            btn.disabled = false;
+          } else {
+            errEl.innerHTML = '<div class="error-msg" style="color:var(--up)">Account created! Signing you in...</div>';
+            await new Promise(r => setTimeout(r, 1000));
+            const { data: d2, error: e2 } = await DB.signIn(email, password);
+            if (e2) {
+              errEl.innerHTML = '<div class="error-msg">' + e2.message + '</div>';
+              btn.textContent = 'Create Account';
+              btn.disabled = false;
+            } else if (d2?.user) {
+              APP.user = d2.user;
+              await APP.loadProfile();
+            }
+          }
+        }
+      } catch(e) {
+        errEl.innerHTML = '<div class="error-msg">Something went wrong. Try again.</div>';
         btn.textContent = mode === 'login' ? 'Sign In' : 'Create Account';
         btn.disabled = false;
-      } else {
-        onSuccess();
       }
     };
 
-    // Enter key support
     ['auth-email','auth-password','auth-confirm'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-submit').click(); });
+      if (el) el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('auth-submit').click();
+      });
     });
   }
 };

@@ -53,7 +53,7 @@ const APP = {
     if (!this.profile) { this.showAuth(); return; }
 
     // Check if onboarding needed
-    const needsOnboarding = !this.profile.selected_exchanges || this.profile.selected_exchanges.length === 0;
+    const needsOnboarding = !this.profile.exchanges || this.profile.exchanges.length === 0;
 
     if (needsOnboarding) {
       this.showOnboarding();
